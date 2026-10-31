@@ -150,6 +150,11 @@ export default function HomePage() {
               <span className="text-muted-theme">Negara</span>
             </div>
             <div className="apple-card px-4 py-2 rounded-2xl text-xs flex items-center gap-2 shadow-xs">
+              <Plane className="w-4 h-4 text-accent-theme" />
+              <span className="font-bold text-main">{stats.trips}</span>
+              <span className="text-muted-theme">Kunjungan</span>
+            </div>
+            <div className="apple-card px-4 py-2 rounded-2xl text-xs flex items-center gap-2 shadow-xs">
               <Camera className="w-4 h-4 text-accent-theme" />
               <span className="font-bold text-main">{stats.photos}</span>
               <span className="text-muted-theme">Foto</span>
@@ -168,7 +173,7 @@ export default function HomePage() {
             </span>
           </div>
           <span className="text-[11px] font-mono text-muted-theme">
-            {mapPins.length} Negara
+            {stats.countries} Negara • {stats.trips} Kunjungan
           </span>
         </div>
 
