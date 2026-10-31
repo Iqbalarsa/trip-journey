@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingIncludes: {
+    "/*": ["./prisma/**/*"],
+    "/api/**/*": ["./prisma/**/*"],
+  },
   images: {
     remotePatterns: [
       {
