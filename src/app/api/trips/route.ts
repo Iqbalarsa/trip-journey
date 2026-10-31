@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { extractDriveFolderId, slugify } from "@/lib/drive";
 import { getTripTimelineTimestamp } from "@/lib/utils";
+import { ensureInitialData } from "@/lib/autoSeed";
 
 export async function GET(request: Request) {
   try {
+    await ensureInitialData();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.trim() || "";
     const country = searchParams.get("country")?.trim() || "";

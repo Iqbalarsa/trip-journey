@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureInitialData } from "@/lib/autoSeed";
 
 export async function GET() {
   try {
+    await ensureInitialData();
     const [tripCount, photoCount, trips] = await Promise.all([
       prisma.trip.count(),
       prisma.photo.count(),
