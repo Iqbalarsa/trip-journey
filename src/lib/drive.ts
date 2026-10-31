@@ -212,7 +212,7 @@ export async function listFolderImages(
 
   try {
     do {
-      const q = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'heic') and trashed = false`;
+      const q = `'${folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'heic' or name contains '.jpg' or name contains '.jpeg' or name contains '.png' or name contains '.webp' or name contains '.heic' or name contains '.JPG' or name contains '.JPEG' or name contains '.PNG' or name contains '.HEIC') and trashed = false`;
       let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
         q
       )}&fields=${encodeURIComponent(fields)}&pageSize=100&key=${effectiveKey}`;
