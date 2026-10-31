@@ -27,11 +27,11 @@ export function CountryCard({ destination, isSelected }: CountryCardProps) {
     destination.coverPhotoUrl ||
     "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
 
-  // Format judul "[Nama Kota], [Negara]" secara rapi
+  // Format judul "[Negara]: [Kota]" (misal: "Germany: Bonn")
   const locationTitle =
     destination.city &&
     destination.city.toLowerCase() !== destination.country.toLowerCase()
-      ? `${destination.city}, ${destination.country}`
+      ? `${destination.country}: ${destination.city}`
       : destination.country || destination.city;
 
   return (
@@ -72,9 +72,9 @@ export function CountryCard({ destination, isSelected }: CountryCardProps) {
           </div>
         </div>
 
-        {/* 2. Bawah Kiri: Judul Gabungan "[Nama Kota], [Negara]" */}
-        <div className="absolute bottom-3.5 sm:bottom-4 left-3.5 sm:left-4 right-3.5 sm:right-4 pointer-events-none">
-          <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white drop-shadow-md group-hover:text-accent-tint transition-colors line-clamp-1">
+        {/* 2. Bawah Kiri: Judul Gabungan "[Negara]: [Kota]" */}
+        <div className="absolute bottom-3 sm:bottom-3.5 left-3.5 sm:left-4 right-3.5 sm:right-4 pointer-events-none">
+          <h3 className="text-sm sm:text-base font-bold tracking-tight text-white drop-shadow-md group-hover:text-accent-tint transition-colors line-clamp-1">
             {locationTitle}
           </h3>
         </div>
