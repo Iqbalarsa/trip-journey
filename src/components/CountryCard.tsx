@@ -22,69 +22,11 @@ interface CountryCardProps {
   isSelected?: boolean;
 }
 
-// Country flag emoji mapping helper
-function getCountryFlag(countryName: string): string {
-  const norm = countryName.toLowerCase().trim();
-  const flagMap: Record<string, string> = {
-    austria: "🇦🇹",
-    czechia: "🇨🇿",
-    "czech republic": "🇨🇿",
-    japan: "🇯🇵",
-    jepang: "🇯🇵",
-    france: "🇫🇷",
-    prancis: "🇫🇷",
-    germany: "🇩🇪",
-    jerman: "🇩🇪",
-    italy: "🇮🇹",
-    italia: "🇮🇹",
-    switzerland: "🇨🇭",
-    swiss: "🇨🇭",
-    indonesia: "🇮🇩",
-    singapore: "🇸🇬",
-    singapura: "🇸🇬",
-    spain: "🇪🇸",
-    spanyol: "🇪🇸",
-    netherlands: "🇳🇱",
-    belanda: "🇳🇱",
-    "united kingdom": "🇬🇧",
-    uk: "🇬🇧",
-    england: "🇬🇧",
-    inggris: "🇬🇧",
-    "united states": "🇺🇸",
-    usa: "🇺🇸",
-    amerika: "🇺🇸",
-    canada: "🇨🇦",
-    australia: "🇦🇺",
-    "new zealand": "🇳🇿",
-    korea: "🇰🇷",
-    "south korea": "🇰🇷",
-    china: "🇨🇳",
-    tiongkok: "🇨🇳",
-    thailand: "🇹🇭",
-    vietnam: "🇻🇳",
-    malaysia: "🇲🇾",
-    norway: "🇳🇴",
-    norwegia: "🇳🇴",
-    sweden: "🇸🇪",
-    swedia: "🇸🇪",
-    finland: "🇫🇮",
-    finlandia: "🇫🇮",
-    denmark: "🇩🇰",
-    greece: "🇬🇷",
-    yunani: "🇬🇷",
-    turkey: "🇹🇷",
-    turki: "🇹🇷",
-    portugal: "🇵🇹",
-  };
-  return flagMap[norm] || "🌍";
-}
-
 export function CountryCard({ destination, isSelected }: CountryCardProps) {
   const coverUrl =
     destination.coverPhotoUrl ||
     "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
 
-  const flag = getCountryFlag(destination.country);
   const displayTitle = destination.title.includes(" — ")
     ? destination.title.split(" — ")[0]
     : destination.title;
@@ -114,11 +56,10 @@ export function CountryCard({ destination, isSelected }: CountryCardProps) {
           {/* Vignette Shadow Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-          {/* Top Floating Badges: Flag & Photo Count */}
+          {/* Top Floating Badges: Country & Photo Count */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-            <div className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-semibold text-white flex items-center gap-1.5 shadow-md">
-              <span className="text-sm leading-none">{flag}</span>
-              <span className="truncate max-w-[120px]">{destination.country}</span>
+            <div className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-xs font-semibold text-white shadow-md">
+              <span className="truncate max-w-[140px]">{destination.country}</span>
             </div>
 
             <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[11px] font-medium text-white/90 flex items-center gap-1 shadow-md">
