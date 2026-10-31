@@ -1,0 +1,58 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./travel.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Trip {
+  id             String      @id @default(uuid())
+  title          String      // e.g., "Autumn Canals of Leiden"
+  slug           String      @unique
+  city           String      // e.g., "Leiden"
+  country        String      // e.g., "Netherlands"
+  dateLabel      String      // e.g., "October 2024"
+  quote          String?     // Short 1-sentence memorable highlight
+  status         String      @default("PUBLISHED") // DRAFT, PUBLISHED
+  latitude       Float?      // Destination coordinates for hero map pin
+  longitude      Float?
+  driveFolderUrl String?
+  driveFolderId  String?
+  coverPhotoUrl  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  chapters       Chapter[]
+  photos         Photo[]
+}
+
+model Chapter {
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  title       String   // e.g., "Morning by the Canals"
+  narrative   String   // Markdown story reflection
+  audioUrl    String?  // Optional ambient audio / voice note URL
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  photos      Photo[]
+}
+
+model Photo {
+  id           String    @id @default(uuid())
+  tripId       String
+  trip         Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  chapterId    String?
+  chapter      Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  driveFileId  String    @unique
+  filename     String
+  imageUrl     String
+  caption      String?
+  takenAt      DateTime?
+  latitude     Float?
+  longitude    Float?
+  locationTag  String?   // e.g., "Leiden, Netherlands"
+  isCover      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+}
