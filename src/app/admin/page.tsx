@@ -24,6 +24,8 @@ import {
   X,
   Image as ImageIcon,
   Check,
+  Edit3,
+  GitMerge,
 } from "lucide-react";
 
 interface CountryVisit {
@@ -75,6 +77,27 @@ function AdminContent() {
   const [loadingCoverPhotos, setLoadingCoverPhotos] = useState(false);
   const [settingCoverPhotoId, setSettingCoverPhotoId] = useState<string | null>(null);
   const [coverSuccessMessage, setCoverSuccessMessage] = useState<string | null>(null);
+
+  // Edit & Merge Visit Modal
+  const [editingVisit, setEditingVisit] = useState<{
+    id: string;
+    title: string;
+    dateLabel: string;
+    city: string;
+    country: string;
+    photoCount: number;
+    otherVisitsInCountry: { id: string; title: string; photoCount: number }[];
+  } | null>(null);
+  const [editDateInput, setEditDateInput] = useState("");
+  const [editTitleInput, setEditTitleInput] = useState("");
+  const [editCityInput, setEditCityInput] = useState("");
+  const [mergeTargetId, setMergeTargetId] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+  const [editMessage, setEditMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     const savedAuth = localStorage.getItem("roamlog_admin_auth");
@@ -220,6 +243,106 @@ function AdminContent() {
     } catch (e) {
       console.error(e);
       alert("Terjadi kesalahan saat mengosongkan database.");
+    }
+  };
+
+  const openEditModal = (
+    visit: CountryVisit,
+    countryName: string,
+    allVisitsInCountry: CountryVisit[]
+  ) => {
+    const others = allVisitsInCountry
+      .filter((v) => v.id !== visit.id)
+      .map((v) => ({ id: v.id, title: v.title, photoCount: v.photoCount }));
+
+    setEditingVisit({
+      id: visit.id,
+      title: visit.title,
+      dateLabel: visit.dateLabel,
+      city: visit.city,
+      country: countryName,
+      photoCount: visit.photoCount,
+      otherVisitsInCountry: others,
+    });
+    setEditDateInput(visit.dateLabel);
+    setEditTitleInput(visit.title);
+    setEditCityInput(visit.city);
+    setMergeTargetId(others[0]?.id || "");
+    setEditMessage(null);
+  };
+
+  const handleSaveVisitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVisit) return;
+    setIsSavingEdit(true);
+    setEditMessage(null);
+
+    try {
+      const res = await fetch(`/api/trips/${editingVisit.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateLabel: editDateInput.trim(),
+          title: editTitleInput.trim(),
+          city: editCityInput.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal menyimpan perubahan.");
+      }
+
+      setEditMessage({ type: "success", text: "Perubahan tanggal dan detail berhasil disimpan!" });
+      fetchCountries();
+      setTimeout(() => {
+        setEditingVisit(null);
+      }, 1000);
+    } catch (err: any) {
+      setEditMessage({ type: "error", text: err.message });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleMergeVisit = async () => {
+    if (!editingVisit || !mergeTargetId) return;
+    const targetVisit = editingVisit.otherVisitsInCountry.find((v) => v.id === mergeTargetId);
+    if (
+      !confirm(
+        `Pindahkan semua ${editingVisit.photoCount} foto dari "${editingVisit.title}" dan gabungkan ke "${targetVisit?.title || "kunjungan tujuan"}"?`
+      )
+    ) {
+      return;
+    }
+
+    setIsMerging(true);
+    setEditMessage(null);
+
+    try {
+      const res = await fetch("/api/admin/merge-trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceTripId: editingVisit.id,
+          targetTripId: mergeTargetId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal menggabungkan kunjungan.");
+      }
+
+      setEditMessage({ type: "success", text: data.message || "Berhasil digabungkan!" });
+      fetchCountries();
+      setTimeout(() => {
+        setEditingVisit(null);
+      }, 1200);
+    } catch (err: any) {
+      setEditMessage({ type: "error", text: err.message });
+    } finally {
+      setIsMerging(false);
     }
   };
 
@@ -690,6 +813,15 @@ function AdminContent() {
 
                           <div className="flex items-center gap-1 shrink-0">
                             <button
+                              onClick={() => openEditModal(visit, c.country, c.visits)}
+                              className="px-2 py-1 rounded-lg text-muted-theme hover:text-accent-theme hover:bg-accent-light-theme text-[11px] font-medium flex items-center gap-1 transition"
+                              title="Ubah Tanggal / Gabungkan Kunjungan Ini"
+                            >
+                              <Edit3 className="w-3 h-3 text-accent-theme" />
+                              <span className="hidden sm:inline">Ubah</span>
+                            </button>
+
+                            <button
                               onClick={() => openCoverModal(visit.id, visit.title)}
                               className="px-2 py-1 rounded-lg text-muted-theme hover:text-accent-theme hover:bg-accent-light-theme text-[11px] font-medium flex items-center gap-1 transition"
                               title="Ubah Foto Cover Kunjungan Ini"
@@ -838,6 +970,181 @@ function AdminContent() {
             <div className="p-3.5 sm:p-4 border-t border-theme bg-surface-subtle flex items-center justify-end">
               <button
                 onClick={() => setCoverModalTrip(null)}
+                className="px-4 py-2 rounded-xl bg-surface border border-theme text-xs font-semibold text-main hover:bg-surface-elevated transition apple-press"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit & Merge Visit Modal */}
+      {editingVisit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-lg apple-card flex flex-col overflow-hidden shadow-2xl border border-theme bg-surface">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-theme flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-main flex items-center gap-2">
+                  <Edit3 className="w-4 h-4 text-accent-theme" />
+                  <span>Ubah Detail Kunjungan</span>
+                </h3>
+                <p className="text-xs text-muted-theme">
+                  Sesuaikan label tanggal, judul album, atau gabungkan dengan kunjungan lain di {editingVisit.country}.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setEditingVisit(null)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center border border-theme bg-surface-subtle hover:bg-surface text-muted-theme hover:text-main transition apple-press"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Alert Message */}
+            {editMessage && (
+              <div
+                className={`px-5 py-2.5 border-b text-xs flex items-center gap-2 font-medium ${
+                  editMessage.type === "success"
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-800 dark:text-emerald-200"
+                    : "bg-rose-500/15 border-rose-500/30 text-rose-800 dark:text-rose-200"
+                }`}
+              >
+                {editMessage.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                )}
+                <span>{editMessage.text}</span>
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-6 overflow-y-auto max-h-[75vh]">
+              {/* Form 1: Edit Date & Info */}
+              <form onSubmit={handleSaveVisitEdit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-main flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-accent-theme" />
+                    <span>Label Tanggal Kunjungan</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editDateInput}
+                    onChange={(e) => setEditDateInput(e.target.value)}
+                    placeholder="Contoh: 22 – 28 Maret 2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-theme bg-surface-subtle focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-theme/30 text-xs text-main transition placeholder:text-muted-theme"
+                  />
+                  <p className="text-[11px] text-muted-theme">
+                    Ubah teks tanggal yang tampil pada kartu beranda dan timeline perjalanan.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-main flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-accent-theme" />
+                    <span>Judul Album</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitleInput}
+                    onChange={(e) => setEditTitleInput(e.target.value)}
+                    placeholder="Contoh: France — 22 – 28 Maret 2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-theme bg-surface-subtle focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-theme/30 text-xs text-main transition placeholder:text-muted-theme"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-main flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Daftar Kota</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editCityInput}
+                    onChange={(e) => setEditCityInput(e.target.value)}
+                    placeholder="Contoh: Paris, Versailles"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-theme bg-surface-subtle focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-theme/30 text-xs text-main transition placeholder:text-muted-theme"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="apple-button-primary px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isSavingEdit ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Simpan Perubahan</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* Form 2: Merge Trip (if multiple visits exist for this country) */}
+              {editingVisit.otherVisitsInCountry.length > 0 && (
+                <div className="pt-5 border-t border-theme space-y-3.5">
+                  <div className="flex items-center gap-2">
+                    <GitMerge className="w-4 h-4 text-accent-theme" />
+                    <span className="text-xs font-bold text-main">
+                      Gabungkan ke Kunjungan Lain
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-theme leading-relaxed">
+                    Jika ada foto lama/baru yang terpisah ke album kunjungan baru karena foto tidak memiliki tanggal EXIF kamera, kamu bisa menggabungkan semua <strong>{editingVisit.photoCount} foto</strong> dari album ini ke salah satu kunjungan di bawah:
+                  </p>
+
+                  <div className="space-y-2.5">
+                    <select
+                      value={mergeTargetId}
+                      onChange={(e) => setMergeTargetId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-theme bg-surface-subtle focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-theme/30 text-xs text-main transition"
+                    >
+                      {editingVisit.otherVisitsInCountry.map((target) => (
+                        <option key={target.id} value={target.id}>
+                          {target.title} ({target.photoCount} foto saat ini)
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleMergeVisit}
+                      disabled={isMerging || !mergeTargetId}
+                      className="w-full px-4 py-2.5 rounded-xl bg-accent-light-theme hover:bg-accent-theme hover:text-white text-accent-theme border border-accent-theme/20 text-xs font-semibold flex items-center justify-center gap-2 transition apple-press disabled:opacity-50"
+                    >
+                      {isMerging ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Memindahkan & Menggabungkan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <GitMerge className="w-3.5 h-3.5" />
+                          <span>Pindahkan Semua Foto & Gabungkan</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 sm:p-4 border-t border-theme bg-surface-subtle flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setEditingVisit(null)}
                 className="px-4 py-2 rounded-xl bg-surface border border-theme text-xs font-semibold text-main hover:bg-surface-elevated transition apple-press"
               >
                 Tutup

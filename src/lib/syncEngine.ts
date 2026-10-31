@@ -199,6 +199,33 @@ async function syncSingleCountryInternal({
 
   country = cleanCountryName(country || folderName || driveResult.folderName);
 
+  // Smart Folder Date Inheritance:
+  // If a photo lacks camera EXIF date (e.g. from Telegram/WhatsApp/screenshot),
+  // inherit the date from photos in the same city folder so it doesn't split into a weird new visit.
+  const cityDatesMap = new Map<string, Date[]>();
+  for (const p of allPhotos) {
+    if (p.hasExifDate && p.takenAt) {
+      const k = p.cityName || "Main";
+      if (!cityDatesMap.has(k)) cityDatesMap.set(k, []);
+      cityDatesMap.get(k)!.push(new Date(p.takenAt));
+    }
+  }
+
+  const allExifDates = Array.from(cityDatesMap.values()).flat();
+  const countryFallbackDate = allExifDates.length > 0 ? allExifDates[0] : null;
+
+  for (const p of allPhotos) {
+    if (!p.hasExifDate) {
+      const k = p.cityName || "Main";
+      const pool = cityDatesMap.get(k);
+      if (pool && pool.length > 0) {
+        p.takenAt = pool[0];
+      } else if (countryFallbackDate) {
+        p.takenAt = countryFallbackDate;
+      }
+    }
+  }
+
   // Cluster photos by >14 days gap
   const clusters = clusterPhotosByTime(allPhotos, 14);
 

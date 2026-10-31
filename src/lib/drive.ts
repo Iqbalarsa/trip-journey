@@ -8,6 +8,7 @@ export interface SyncedPhoto {
   imageUrl: string;
   thumbnailUrl?: string;
   takenAt: Date | null;
+  hasExifDate?: boolean;
   latitude: number | null;
   longitude: number | null;
   locationTag?: string;
@@ -384,6 +385,7 @@ export async function syncDriveFolder(
 
 function mapDriveFilesToPhotos(files: any[], cityName: string): SyncedPhoto[] {
   return files.map((file: any) => {
+    const hasExif = !!file.imageMediaMetadata?.time;
     const rawTime = file.imageMediaMetadata?.time || file.createdTime;
     const lat = file.imageMediaMetadata?.location?.latitude ?? null;
     const lng = file.imageMediaMetadata?.location?.longitude ?? null;
@@ -398,6 +400,7 @@ function mapDriveFilesToPhotos(files: any[], cityName: string): SyncedPhoto[] {
       imageUrl: highResUrl,
       thumbnailUrl: thumbUrl,
       takenAt: parseExifDate(rawTime),
+      hasExifDate: hasExif,
       latitude: typeof lat === "number" ? lat : null,
       longitude: typeof lng === "number" ? lng : null,
       cityName,
